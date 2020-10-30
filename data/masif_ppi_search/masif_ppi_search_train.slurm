@@ -14,4 +14,4 @@ module purge
 module load gcc cuda cudnn mvapich2 openblas
 deactivate
 source ~/lpdi_fs/masif/tensorflow-1.12/bin/activate
-./train_nn.sh nn_models.sc05.all_feat.custom_params.py
+./train_nn.sh masif.data.masif_ppi_search.nn_models.sc05.all_feat.custom_params.py

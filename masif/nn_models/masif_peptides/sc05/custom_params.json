@@ -1,0 +1,9 @@
+{
+    'cache_dir': 'cache/masif_peptides/sc05/',
+    'model_dir': '{this_dir}/all_feat/model_data/',
+    'desc_dir': 'output/masif_peptides/sc05/all_feat/model_data/',
+    'gif_eval_out': 'output/masif_peptides/sc05/gif_eval/',
+    'min_sc_filt': 0.5,
+    'max_sc_filt': 1.0,
+    'pos_surf_accept_probability': 1.0
+}

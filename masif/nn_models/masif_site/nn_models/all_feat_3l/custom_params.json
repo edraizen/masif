@@ -1,0 +1,7 @@
+{
+    'model_dir': '{this_dir}/model_data/',
+    'feat_mask': [1.0, 1.0, 1.0, 1.0, 1.0],
+    'n_conv_layers': 3,
+    'out_pred_dir': 'output/masif_site/all_feat_3l/pred_data/',
+    'out_surf_dir': 'output/masif_site/all_feat_3l/pred_surfaces/'
+}

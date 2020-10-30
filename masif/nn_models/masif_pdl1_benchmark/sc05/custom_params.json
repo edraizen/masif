@@ -1,0 +1,9 @@
+{
+    'cache_dir': 'nn_models/sc05/cache/',
+    'model_dir': 'nn_models/sc05/all_feat/model_data/',
+    'desc_dir': 'output/sc05/all_feat/model_data/',
+    'gif_eval_out': 'nn_models/sc05/gif_eval/',
+    'min_sc_filt': 0.5,
+    'max_sc_filt': 1.0,
+    'pos_surf_accept_probability': 1.0
+}

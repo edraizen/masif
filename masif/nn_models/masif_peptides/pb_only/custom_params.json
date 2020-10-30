@@ -1,0 +1,5 @@
+{
+    'model_dir': '{this_dir}/model_data/',
+    'out_dir': 'output/masif_peptides/pb_only/',
+    'feat_mask': [0.0, 0.0, 0.0, 1.0, 0.0]
+}

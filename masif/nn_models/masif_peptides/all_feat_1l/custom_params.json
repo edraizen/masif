@@ -1,0 +1,6 @@
+{
+    'model_dir': '{this_dir}/model_data/',
+    'out_dir': 'output/masif_peptides/all_feat_1l/',
+    'feat_mask': [1.0, 1.0, 1.0, 1.0, 1.0],
+    'n_conv_layers': 1
+}

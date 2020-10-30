@@ -1,0 +1,6 @@
+{
+    'cache_dir': 'cache/masif_pdl1_benchmark/sc05/',
+    'model_dir': '{this_dir}/model_data/',
+    'desc_dir': 'descriptors/sc05/all_feat/',
+    'feat_mask': [1.0, 1.0, 1.0, 1.0, 1.0]
+}

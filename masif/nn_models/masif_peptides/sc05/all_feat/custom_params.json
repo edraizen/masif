@@ -1,0 +1,6 @@
+{
+    'cache_dir': 'cache/masif_peptides/sc05',
+    'model_dir': '{this_dir}/model_data/',
+    'desc_dir': 'descriptors/masif_peptides/sc05/all_feat/',
+    'feat_mask': [1.0, 1.0, 1.0, 1.0, 1.0]
+}
