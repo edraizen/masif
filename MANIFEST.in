@@ -1,0 +1,2 @@
+include masif/*/*.json
+include masif/*/README.md

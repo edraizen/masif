@@ -2,7 +2,7 @@
     "raw_pdb_dir": "data_preparation/00-raw_pdbs/",
     "pdb_chain_dir": "data_preparation/01-benchmark_pdbs/",
     "ply_chain_dir": "data_preparation/01-benchmark_surfaces/",
-    "tmp_dir": null,
+    "tmp_dir": "tmp",
     "ply_file_template": "data_preparation/01-benchmark_surfaces/{}_{}.ply",
     "use_hbond": true,
     "use_hphob": true,

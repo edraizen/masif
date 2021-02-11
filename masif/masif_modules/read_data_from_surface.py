@@ -1,20 +1,24 @@
 # coding: utf-8
 # ## Imports and helper functions
-from IPython.core.debugger import set_trace
-import pymesh
+import os, sys
+
 import time
 import numpy as np
 
-from geometry.compute_polar_coordinates import compute_polar_coordinates
-from input_output.save_ply import save_ply
+import pymesh
 
-from sklearn import metrics
+try:
+    from masif.geometry.compute_polar_coordinates import compute_polar_coordinates
+except (ImportError, ModuleNotFoundError):
+    sys.path.append(os.path.join(os.path.dirname(os.path.dirname(
+        os.path.abspath(__file__))), "geometry"))
+    from compute_polar_coordinates import compute_polar_coordinates
 
 
 def read_data_from_surface(ply_fn, params):
     """
-    # Read data from a ply file -- decompose into patches. 
-    # Returns: 
+    # Read data from a ply file -- decompose into patches.
+    # Returns:
     # list_desc: List of features per patch
     # list_coords: list of angular and polar coordinates.
     # list_indices: list of indices of neighbors in the patch.
@@ -22,16 +26,16 @@ def read_data_from_surface(ply_fn, params):
     """
     mesh = pymesh.load_mesh(ply_fn)
 
-    # Normals: 
+    # Normals:
     n1 = mesh.get_attribute("vertex_nx")
     n2 = mesh.get_attribute("vertex_ny")
     n3 = mesh.get_attribute("vertex_nz")
     normals = np.stack([n1,n2,n3], axis=1)
 
-    # Compute the angular and radial coordinates. 
+    # Compute the angular and radial coordinates.
     rho, theta, neigh_indices, mask = compute_polar_coordinates(mesh, radius=params['max_distance'], max_vertices=params['max_shape_size'])
 
-    # Compute the principal curvature components for the shape index. 
+    # Compute the principal curvature components for the shape index.
     mesh.add_attribute("vertex_mean_curvature")
     H = mesh.get_attribute("vertex_mean_curvature")
     mesh.add_attribute("vertex_gaussian_curvature")
@@ -42,7 +46,7 @@ def read_data_from_surface(ply_fn, params):
     elem[elem<0] = 1e-8
     k1 = H + np.sqrt(elem)
     k2 = H - np.sqrt(elem)
-    # Compute the shape index 
+    # Compute the shape index
     si = (k1+k2)/(k1-k2)
     si = np.arctan(si)*(2/np.pi)
 
@@ -57,15 +61,15 @@ def read_data_from_surface(ply_fn, params):
     # Normalize hydropathy by dividing by 4.5
     hphob = mesh.get_attribute("vertex_hphob")/4.5
 
-    # Iface labels (for ground truth only)     
+    # Iface labels (for ground truth only)
     if "vertex_iface" in mesh.get_attribute_names():
-        iface_labels = mesh.get_attribute("vertex_iface") 
+        iface_labels = mesh.get_attribute("vertex_iface")
     else:
         iface_labels = np.zeros_like(hphob)
 
     # n: number of patches, equal to the number of vertices.
     n = len(mesh.vertices)
-    
+
     input_feat = np.zeros((n, params['max_shape_size'], 5))
 
     # Compute the input features for each patch.
@@ -73,20 +77,20 @@ def read_data_from_surface(ply_fn, params):
         # Patch members.
         neigh_vix = np.array(neigh_indices[vix])
 
-        # Compute the distance-dependent curvature for all neighbors of the patch. 
+        # Compute the distance-dependent curvature for all neighbors of the patch.
         patch_v = mesh.vertices[neigh_vix]
         patch_n = normals[neigh_vix]
         patch_cp = np.where(neigh_vix == vix)[0][0] # central point
         mask_pos = np.where(mask[vix] == 1.0)[0] # nonzero elements
         patch_rho = rho[vix][mask_pos] # nonzero elements of rho
-        ddc = compute_ddc(patch_v, patch_n, patch_cp, patch_rho)        
-        
+        ddc = compute_ddc(patch_v, patch_n, patch_cp, patch_rho)
+
         input_feat[vix, :len(neigh_vix), 0] = si[neigh_vix]
         input_feat[vix, :len(neigh_vix), 1] = ddc
         input_feat[vix, :len(neigh_vix), 2] = hbond[neigh_vix]
         input_feat[vix, :len(neigh_vix), 3] = charge[neigh_vix]
         input_feat[vix, :len(neigh_vix), 4] = hphob[neigh_vix]
-        
+
     return input_feat, rho, theta, mask, neigh_indices, iface_labels, np.copy(mesh.vertices)
 
 # From a full shape in a full protein, extract a patch around a vertex.
@@ -135,17 +139,17 @@ from scipy.spatial import cKDTree
 # neigh1 and neigh2 are the precomputed indices; rho1 and rho2 their distances.
 def compute_shape_complementarity(ply_fn1, ply_fn2, neigh1, neigh2, rho1, rho2, mask1, mask2, params):
     """
-        compute_shape_complementarity: compute the shape complementarity between all pairs of patches. 
+        compute_shape_complementarity: compute the shape complementarity between all pairs of patches.
         ply_fnX: path to the ply file of the surface of protein X=1 and X=2
-        neighX, rhoX, maskX: (N,max_vertices_per_patch) matrices with the indices of the neighbors, the distances to the center 
+        neighX, rhoX, maskX: (N,max_vertices_per_patch) matrices with the indices of the neighbors, the distances to the center
                 and the mask
 
-        Returns: vX_sc (2,N,10) matrix with the shape complementarity (shape complementarity 25 and 50) 
+        Returns: vX_sc (2,N,10) matrix with the shape complementarity (shape complementarity 25 and 50)
         of each vertex to its nearest neighbor in the other protein, in 10 rings.
     """
     # Mesh 1
     mesh1 = pymesh.load_mesh(ply_fn1)
-    # Normals: 
+    # Normals:
     nx = mesh1.get_attribute("vertex_nx")
     ny = mesh1.get_attribute("vertex_ny")
     nz = mesh1.get_attribute("vertex_nz")
@@ -153,7 +157,7 @@ def compute_shape_complementarity(ply_fn1, ply_fn2, neigh1, neigh2, rho1, rho2, 
 
     # Mesh 2
     mesh2 = pymesh.load_mesh(ply_fn2)
-    # Normals: 
+    # Normals:
     nx = mesh2.get_attribute("vertex_nx")
     ny = mesh2.get_attribute("vertex_ny")
     nz = mesh2.get_attribute("vertex_nz")
@@ -178,7 +182,7 @@ def compute_shape_complementarity(ply_fn1, ply_fn2, neigh1, neigh2, rho1, rho2, 
     # Interface vertices in v1
     interface_vertices_v1 = np.where(d < int_cutoff)[0]
 
-    # Go through every interface vertex. 
+    # Go through every interface vertex.
     for cv1_iiix in range(len(interface_vertices_v1)):
         cv1_ix = interface_vertices_v1[cv1_iiix]
         assert (d[cv1_ix] < int_cutoff)
@@ -199,7 +203,7 @@ def compute_shape_complementarity(ply_fn1, ply_fn2, neigh1, neigh2, rho1, rho2, 
         p_dists_v2_to_v1, p_nearest_neighbor_v2_to_v1 = patch_kdt.query(patch_v2)
         patch_kdt = cKDTree(patch_v2)
         p_dists_v1_to_v2, p_nearest_neighbor_v1_to_v2 = patch_kdt.query(patch_v1)
-        
+
         # First v1->v2
         neigh_cv1_p = p_nearest_neighbor_v1_to_v2
         comp1 = [np.dot(patch_n1[x], -patch_n2[neigh_cv1_p][x]) for x in range(len(patch_n1))]
@@ -218,7 +222,7 @@ def compute_shape_complementarity(ply_fn1, ply_fn2, neigh1, neigh2, rho1, rho2, 
             else:
                 comp_rings1_25[ring] = np.percentile(comp1[members], 25)
                 comp_rings1_50[ring] = np.percentile(comp1[members], 50)
-        
+
         # Now v2->v1
         neigh_cv2_p = p_nearest_neighbor_v2_to_v1
         comp2 = [np.dot(patch_n2[x], -patch_n1[neigh_cv2_p][x]) for x in range(len(patch_n2))]
@@ -227,7 +231,7 @@ def compute_shape_complementarity(ply_fn1, ply_fn2, neigh1, neigh2, rho1, rho2, 
         comp_rings2_25 = np.zeros(num_rings)
         comp_rings2_50 = np.zeros(num_rings)
 
-        # Apply mask to patch rho coordinates. 
+        # Apply mask to patch rho coordinates.
         patch_rho2 = np.array(rho2[cv2_ix])[patch_idxs2]
         for ring in range(num_rings):
             scale = scales[ring]
@@ -276,7 +280,7 @@ def compute_ddc(patch_v, patch_n, patch_cp, patch_rho):
         Compute the distance dependent curvature, Yin et al PNAS 2009
             patch_v: the patch vertices
             patch_n: the patch normals
-            patch_cp: the index of the central point of the patch 
+            patch_cp: the index of the central point of the patch
             patch_rho: the geodesic distance to all members.
         Returns a vector with the ddc for each point in the patch.
     """
@@ -303,3 +307,48 @@ def compute_ddc(patch_v, patch_n, patch_cp, patch_rho):
     kij[kij < -0.7] = 0
 
     return kij
+
+def save_shape_complementary_data_from_surfaces(my_precomp_dir, max_distance, max_shape_size, *ply_files):
+    # Compute shape complementarity between the two proteins.
+    rho = {}
+    neigh_indices = {}
+    mask = {}
+    input_feat = {}
+    theta = {}
+    iface_labels = {}
+    verts = {}
+    succesful_pids = []
+
+    params = {"max_distance":max_distance, "max_shape_size":max_shape_size}
+
+    for pid, ply_file in enumerate(ply_files):
+        succesful_pids.append(pid)
+        input_feat[pid], rho[pid], theta[pid], mask[pid], neigh_indices[pid], iface_labels[pid], verts[pid] = read_data_from_surface(ply_file, params)
+
+    if len(succesful_pids) > 1 and masif_app == 'masif_ppi_search':
+        start_time = time.time()
+        p1_sc_labels, p2_sc_labels = compute_shape_complementarity(ply_file[0], ply_file[1], neigh_indices[0],neigh_indices[1], rho[0], rho[1], mask[0], mask[1], params)
+        np.save(my_precomp_dir+'p1_sc_labels', p1_sc_labels)
+        np.save(my_precomp_dir+'p2_sc_labels', p2_sc_labels)
+        end_time = time.time()
+        print("Computing shape complementarity took {:.2f}".format(end_time-start_time))
+
+    # Save data only if everything went well.
+    pids = ['p1', "p2"]
+    for pid in succesful_pids:
+        pid_name = pids[pid]
+        np.save(my_precomp_dir+pid_name+'_rho_wrt_center', rho[pid])
+        np.save(my_precomp_dir+pid_name+'_theta_wrt_center', theta[pid])
+        np.save(my_precomp_dir+pid_name+'_input_feat', input_feat[pid])
+        np.save(my_precomp_dir+pid_name+'_mask', mask[pid])
+        np.save(my_precomp_dir+pid_name+'_list_indices', neigh_indices[pid])
+        np.save(my_precomp_dir+pid_name+'_iface_labels', iface_labels[pid])
+        # Save x, y, z_
+        np.save(my_precomp_dir+pid_name+'_X.npy', verts[pid][:,0])
+        np.save(my_precomp_dir+pid_name+'_Y.npy', verts[pid][:,1])
+        np.save(my_precomp_dir+pid_name+'_Z.npy', verts[pid][:,2])
+
+if __name__ == "__main__":
+    assert len(sys.argv)>4, "Usage: python read_data_from_surface.py my_precomp_dir max_distance max_shape_size ply_file[, ...]"
+    my_precomp_dir, max_distance, max_shape_size = sys.argv[1:4]
+    save_shape_complementary_data_from_surfaces(my_precomp_dir, float(max_distance), int(max_shape_size), *sys.argv[4:])

@@ -1,7 +1,8 @@
+import sys
 import pymesh
-import numpy
+import numpy as np
 """
-read_ply.py: Save a ply file to disk using pymesh and load the attributes used by MaSIF. 
+read_ply.py: Save a ply file to disk using pymesh and load the attributes used by MaSIF.
 Pablo Gainza - LPDI STI EPFL 2019
 Released under an Apache License 2.0
 """
@@ -25,9 +26,12 @@ def save_ply(
     """
     mesh = pymesh.form_mesh(vertices, faces)
     if normals is not None:
-        n1 = normals[:, 0]
-        n2 = normals[:, 1]
-        n3 = normals[:, 2]
+        if isinstance(normals, (list, tuple)) and len(normals)==3:
+            n1, n2, n3 = np.array(normals[0]), np.array(normals[1]), np.array(normals[2])
+        else:
+            n1 = normals[:, 0]
+            n2 = normals[:, 1]
+            n3 = normals[:, 2]
         mesh.add_attribute("vertex_nx")
         mesh.set_attribute("vertex_nx", n1)
         mesh.add_attribute("vertex_ny")
@@ -56,3 +60,20 @@ def save_ply(
         filename, mesh, *mesh.get_attribute_names(), use_float=True, ascii=True
     )
 
+if __name__ == "__main__":
+    if len(sys.argv) != 3:
+        raise RuntimeError("Usage: ./save_ply.py path/to/output.ply json_settings_file")
+
+    import json
+
+    filename = sys.argv[1]
+    json_settings_file = sys.argv[2]
+
+    with open(json_settings_file) as f:
+        json_settings = json.load(f)
+
+    json_settings = {k:np.array(v) if k!="normals" else v for k, v in json_settings.items()}
+
+    vertices = json_settings.pop("vertices")
+
+    save_ply(filename, vertices, **json_settings)

@@ -1,9 +1,4 @@
 #!/bin/bash
-masif_root=$(git rev-parse --show-toplevel)
-masif_source=$masif_root/source/
-masif_matlab=$masif_root/source/matlab_libs/
-export PYTHONPATH=$PYTHONPATH:$masif_source
-export masif_matlab
 if [ "$1" == "--file" ]
 then
 	echo "Running masif site on $2"
@@ -15,6 +10,7 @@ then
 	mkdir -p data_preparation/00-raw_pdbs/
 	cp $FILENAME data_preparation/00-raw_pdbs/$PDB_ID\.pdb
 else
+	echo "Running masif site on $1"
 	PPI_PAIR_ID=$1
 	PDB_ID=$(echo $PPI_PAIR_ID| cut -d"_" -f1)
 	CHAIN1=$(echo $PPI_PAIR_ID| cut -d"_" -f2)

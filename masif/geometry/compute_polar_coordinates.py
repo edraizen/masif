@@ -1,5 +1,5 @@
 """
-compute_polar_coordinates.py: Compute the polar coordinates of all patches. 
+compute_polar_coordinates.py: Compute the polar coordinates of all patches.
 Pablo Gainza - LPDI STI EPFL 2019
 This file is part of MaSIF.
 Released under an Apache License 2.0
@@ -14,15 +14,15 @@ from IPython.core.debugger import set_trace
 from  numpy.linalg import norm
 import time
 from scipy.sparse import csr_matrix, coo_matrix
-import pymesh
+
 
 def compute_polar_coordinates(mesh, do_fast=True, radius=12, max_vertices=200):
     """
-    compute_polar_coordinates: compute the polar coordinates for every patch in the mesh. 
-    Returns: 
+    compute_polar_coordinates: compute the polar coordinates for every patch in the mesh.
+    Returns:
         rho: radial coordinates for each patch. padded to zero.
-        theta: angle values for each patch. padded to zero. 
-        neigh_indices: indices of members of each patch. 
+        theta: angle values for each patch. padded to zero.
+        neigh_indices: indices of members of each patch.
         mask: the mask for rho and theta
     """
 
@@ -34,7 +34,7 @@ def compute_polar_coordinates(mesh, do_fast=True, radius=12, max_vertices=200):
     norm3 = mesh.get_attribute('vertex_nz')
     normals = np.vstack([norm1, norm2, norm3]).T
 
-    # Graph 
+    # Graph
     G=nx.Graph()
     n = len(mesh.vertices)
     G.add_nodes_from(np.arange(n))
@@ -46,7 +46,7 @@ def compute_polar_coordinates(mesh, do_fast=True, radius=12, max_vertices=200):
     edges = np.stack([rowi, rowj]).T
     verts = mesh.vertices
 
-    # Get weights 
+    # Get weights
     edgew = verts[rowi] - verts[rowj]
     edgew = scipy.linalg.norm(edgew, axis=1)
     wedges = np.stack([rowi, rowj, edgew]).T
@@ -84,7 +84,7 @@ def compute_polar_coordinates(mesh, do_fast=True, radius=12, max_vertices=200):
     else:
         theta = compute_theta_all(D, vertices, faces, normals, idx, radius)
 
-    
+
     # Output a few patches for debugging purposes.
     # extract a patch
     #for i in [0,100,500,1000,1500,2000]:
@@ -94,23 +94,23 @@ def compute_polar_coordinates(mesh, do_fast=True, radius=12, max_vertices=200):
     #    subv, subn, subf = extract_patch(mesh, neigh_i, i)
     #    # Output the patch's rho and theta coords
     #    output_patch_coords(subv, subf, subn, i, neigh_i, theta[i], D[i, :])
-    
+
 
     mds_end_t = time.clock()
     print('MDS took {:.2f}s'.format((mds_end_t-mds_start_t)))
-    
+
     n = len(d2)
     theta_out = np.zeros((n, max_vertices))
     rho_out= np.zeros((n, max_vertices))
     mask_out = np.zeros((n, max_vertices))
-    # neighbors of each key. 
+    # neighbors of each key.
     neigh_indices = []
-    
+
     # Assemble output.
-    for i in range(n): 
+    for i in range(n):
         dists_i = d2[i]
         sorted_dists_i = sorted(dists_i.items(), key=lambda kv: kv[1])
-        neigh = [int(x[0]) for x in sorted_dists_i[0:max_vertices]] 
+        neigh = [int(x[0]) for x in sorted_dists_i[0:max_vertices]]
         neigh_indices.append(neigh)
         rho_out[i,:len(neigh)]= np.squeeze(np.asarray(D[i,neigh].todense()))
         theta_out[i,:len(neigh)]= np.squeeze(theta[i][neigh])
@@ -124,12 +124,12 @@ def compute_thetas(plane, vix, verts, faces, normal, neighbors, idx):
     """
     compute_thetas: compute the angles of each vertex with respect to some
     random direction. Ensure that theta runs clockwise with respect to the
-    normals. 
-    Args: 
+    normals.
+    Args:
         plane: the 2D plane of the vertices in the patch as computed by multidimensional scaling
-        vix: the index of the center in the plane. 
+        vix: the index of the center in the plane.
         mesh: The full mesh of the protein.
-        neighbors: the indices of the patch vertices 
+        neighbors: the indices of the patch vertices
         idx: a list of faces indexed per vertex.
     Returns:
         thetas: theta values for the patch.
@@ -139,7 +139,7 @@ def compute_thetas(plane, vix, verts, faces, normal, neighbors, idx):
     # Center the plane so that the origin is at (0,0).
     plane = plane-plane[plane_center_ix]
 
-    # Choose one of the neighboring triangles, one such that all neighbors are in neighbors. 
+    # Choose one of the neighboring triangles, one such that all neighbors are in neighbors.
     valid = False
     for i in range(len(idx[vix])):
         tt = idx[vix][i]
@@ -153,7 +153,7 @@ def compute_thetas(plane, vix, verts, faces, normal, neighbors, idx):
         assert(valid)
     except:
         set_trace()
-     
+
     # Compute the normal for tt by averagin over the vertex normals
     normal_tt = np.mean([normal[tt[0]], normal[tt[1]], normal[tt[2]]], axis=0)
 
@@ -171,7 +171,7 @@ def compute_thetas(plane, vix, verts, faces, normal, neighbors, idx):
     norm_plane[plane_center_ix] = 1.0
     norm_plane = np.stack([norm_plane, norm_plane], axis=1)
 
-    # compute vectors from the center point to each vertex in the plane.  
+    # compute vectors from the center point to each vertex in the plane.
     vecs = np.divide(plane,norm_plane)
     vecs[plane_center_ix] = [0,0]
     vecs = np.stack([vecs[:,0], vecs[:,1], np.zeros(len(vecs))], axis=1)
@@ -206,7 +206,7 @@ def compute_thetas(plane, vix, verts, faces, normal, neighbors, idx):
     return thetas
 
 def dict_to_sparse(mydict):
-    """ 
+    """
         create a sparse matrix from a dictionary
     """
 
@@ -231,7 +231,7 @@ def dict_to_sparse(mydict):
 
 
 def extract_patch(mesh, neigh, cv):
-    """ 
+    """
     Extract a patch from the mesh.
         neigh: the neighboring vertices.
     """
@@ -245,29 +245,29 @@ def extract_patch(mesh, neigh, cv):
     subn = normals[neigh]
 
 
-    # Extract triangulation. 
-    
+    # Extract triangulation.
+
     m = np.zeros(n,dtype=int)
 
     # -1 if not there.
-    m = m - 1 
+    m = m - 1
     for i in range(len(neigh)):
         m[neigh[i]] = i
     f = mesh.faces.astype(int)
     nf = len(f)
-    
-    neigh = set(neigh) 
+
+    neigh = set(neigh)
     subf = [[m[f[i][0]], m[f[i][1]], m[f[i][2]]] for i in range(nf) \
              if f[i][0] in neigh and f[i][1] in neigh and f[i][2] in neigh]
-    
-    subfaces = subf
-    return np.array(subverts), np.array(subn), np.array(subf) 
 
-def output_patch_coords(subv, subf, subn, i, neigh_i, theta, rho): 
-    """ 
+    subfaces = subf
+    return np.array(subverts), np.array(subn), np.array(subf)
+
+def output_patch_coords(subv, subf, subn, i, neigh_i, theta, rho):
+    """
         For debugging purposes, save a patch to visualize it.
-    """ 
-    
+    """
+    import pymesh
     mesh = pymesh.form_mesh(subv, subf)
     n1 = subn[:,0]
     n2 = subn[:,1]
@@ -312,7 +312,7 @@ def compute_theta_all(D, vertices, faces, normals, idx, radius):
 
         # Plane_i: the 2D plane for all neighbors of i
         plane_i = call_mds(mymds, pair_dist_i)
-    
+
         # Compute the angles on the plane.
         theta = compute_thetas(plane_i, i, vertices, faces, normals, neigh_i, idx)
         all_theta.append(theta)
@@ -323,7 +323,7 @@ def compute_theta_all_fast(D, vertices, faces, normals, idx, radius):
     """
         compute_theta_all_fast: compute the theta coordinate using an approximation.
         The approximation consists of taking only the inner radius/2 for the multidimensional
-        scaling. Then, for points farther than radius/2, the shortest line to the center is used. 
+        scaling. Then, for points farther than radius/2, the shortest line to the center is used.
         This speeds up the method by a factor of about 100.
     """
     mymds = MDS(n_components=2, n_init=1, eps=0.1, max_iter=50, dissimilarity='precomputed', n_jobs=1)
@@ -344,7 +344,7 @@ def compute_theta_all_fast(D, vertices, faces, normals, idx, radius):
         plane_i = call_mds(mymds, pair_dist_i)
         toc = time.clock()
         only_mds += (toc - tic)
-    
+
         # Compute the angles on the plane.
         theta = compute_thetas(plane_i, i, vertices, faces, normals, neigh_i, idx)
 
@@ -359,14 +359,9 @@ def compute_theta_all_fast(D, vertices, faces, normals, idx, radius):
         closest = neigh_i[closest]
         theta[neigh_k] = theta[closest]
 
-        
+
         all_theta.append(theta)
     end_loop = time.clock()
     print('Only MDS time: {:.2f}s'.format(only_mds))
     print('Full loop time: {:.2f}s'.format(end_loop-start_loop))
     return all_theta
-
-
-
-
-

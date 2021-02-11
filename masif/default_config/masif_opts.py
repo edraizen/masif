@@ -6,6 +6,8 @@ import collections.abc
 
 masif_opts = {}
 
+verbose = os.environ.get("MASIF_VERBOSE", "f").lower()[0]=="t"
+
 def update(d, u):
     for k, v in u.items():
         if isinstance(v, collections.abc.Mapping):
@@ -17,20 +19,24 @@ def update(d, u):
 def make_paths(d, this_dir=None):
     for k, v in d.items():
         if isinstance(v, collections.abc.Mapping):
-            make_paths(v)
+            d[k]=make_paths(v, this_dir=this_dir)
         elif k.endswith("_dir"):
-            if v.startswith("{masif_source}"):
-                v = v.format(masif_source=os.dirname(os.dirname(__file__)))
-            if v == "{tmp_dir}":
+            if v is None:
+                v = tempfile.gettempdir()
+            elif v.startswith("{masif_source}"):
+                v = v.format(masif_source=os.path.dirname(os.path.dirname(__file__)))
+            elif v == "{tmp_dir}":
                 #Set tempdir
                 v = v.format(tmp_dir=tempfile.gettempdir())
-            if this_dir is not None and v.startswith("{this_dir}"):
-                v = v.format(masif_source=os.dirname(os.dirname(__file__)))
+            elif this_dir is not None and v.startswith("{this_dir}"):
+                v = v.format(masif_source=os.path.dirname(os.path.dirname(__file__)))
             if not os.path.isdir(v):
-                os.make_dirs(v, exist_ok=True)
+                os.makedirs(v, exist_ok=True)
+            d[k]=v
+    return d
 
 def read_config_file(f):
-    with open(default_config_path) as fh:
+    with open(f) as fh:
         config = json.load(fh)
     return config
 
@@ -42,13 +48,13 @@ def update_config(old, new=None):
     elif isinstance(old, str) and old in masif_opts:
         old = masif_opts[old]
     elif isinstance(old, str) and os.path.isfile(old):
-        old = read_config_file(f)
+        old = read_config_file(old)
     else:
-        raise KeyError("Invalid key or file")
+        raise KeyError("Invalid key or file: {}".format(old))
 
     if isinstance(new, collections.abc.Mapping):
         pass
-    elif isinstance(new, str) and os.path.isfile(old):
+    elif isinstance(new, str) and os.path.isfile(new):
         new = read_config_file(f)
     else:
         if "masif" in new and "." in new:

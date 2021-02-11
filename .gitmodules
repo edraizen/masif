@@ -1,0 +1,3 @@
+[submodule "third_party/PyMesh"]
+	path = third_party/PyMesh
+	url = https://github.com/PyMesh/PyMesh.git
