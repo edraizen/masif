@@ -1,6 +1,6 @@
 biopython
 open3d
-numpy
+numpy==1.18.5
 scipy
 sklearn
 tensorflow==1.15.5
