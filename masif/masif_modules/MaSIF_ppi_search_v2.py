@@ -11,27 +11,27 @@ class MaSIF_ppi_search:
 
     def count_number_parameters(self):
         total_parameters = 0
-        for variable in tf.trainable_variables():
+        for variable in tf.compat.v1.trainable_variables():
             # shape is an array of tf.Dimension
             shape = variable.get_shape()
             print(variable)
             variable_parameters = 1
             for dim in shape:
-                variable_parameters *= dim.value
+                variable_parameters *= dim
             print(variable_parameters)
             total_parameters += variable_parameters
         print("Total number parameters: %d" % total_parameters)
 
     def frobenius_norm(self, tensor):
         square_tensor = tf.square(tensor)
-        tensor_sum = tf.reduce_sum(square_tensor)
+        tensor_sum = tf.reduce_sum(input_tensor=square_tensor)
         frobenius_norm = tf.sqrt(tensor_sum)
         return frobenius_norm
 
     def build_sparse_matrix_softmax(self, idx_non_zero_values, X, dense_shape_A):
-        A = tf.SparseTensorValue(idx_non_zero_values, tf.squeeze(X), dense_shape_A)
-        A = tf.sparse_reorder(A)  # n_edges x n_edges
-        A = tf.sparse_softmax(A)
+        A = tf.compat.v1.SparseTensorValue(idx_non_zero_values, tf.squeeze(X), dense_shape_A)
+        A = tf.sparse.reorder(A)  # n_edges x n_edges
+        A = tf.sparse.softmax(A)
 
         return A
 
@@ -74,8 +74,8 @@ class MaSIF_ppi_search:
         eps=1e-5,
         mean_gauss_activation=True,
     ):
-        n_samples = tf.shape(rho_coords)[0]
-        n_vertices = tf.shape(rho_coords)[1]
+        n_samples = tf.shape(input=rho_coords)[0]
+        n_vertices = tf.shape(input=rho_coords)[1]
         # n_feat = input_feat.get_shape().as_list()[2]
 
         all_conv_feat = []
@@ -84,7 +84,7 @@ class MaSIF_ppi_search:
             thetas_coords_ = tf.reshape(theta_coords, [-1, 1])  # batch_size*n_vertices
 
             thetas_coords_ += k * 2 * np.pi / self.n_rotations
-            thetas_coords_ = tf.mod(thetas_coords_, 2 * np.pi)
+            thetas_coords_ = tf.math.floormod(thetas_coords_, 2 * np.pi)
             rho_coords_ = tf.exp(
                 -tf.square(rho_coords_ - mu_rho) / (tf.square(sigma_rho) + eps)
             )
@@ -103,7 +103,7 @@ class MaSIF_ppi_search:
                 mean_gauss_activation
             ):  # computes mean weights for the different gaussians
                 gauss_activations /= (
-                    tf.reduce_sum(gauss_activations, 1, keep_dims=True) + eps
+                    tf.reduce_sum(input_tensor=gauss_activations, axis=1, keepdims=True) + eps
                 )  # batch_size, n_vertices, n_gauss
 
             gauss_activations = tf.expand_dims(
@@ -116,7 +116,7 @@ class MaSIF_ppi_search:
             gauss_desc = tf.multiply(
                 gauss_activations, input_feat_
             )  # batch_size, n_vertices, n_feat, n_gauss,
-            gauss_desc = tf.reduce_sum(gauss_desc, 1)  # batch_size, n_feat, n_gauss,
+            gauss_desc = tf.reduce_sum(input_tensor=gauss_desc, axis=1)  # batch_size, n_feat, n_gauss,
             gauss_desc = tf.reshape(
                 gauss_desc, [n_samples, self.n_thetas * self.n_rhos]
             )  # batch_size, 80
@@ -124,7 +124,7 @@ class MaSIF_ppi_search:
             conv_feat = tf.matmul(gauss_desc, W_conv) + b_conv  # batch_size, 80
             all_conv_feat.append(conv_feat)
         all_conv_feat = tf.stack(all_conv_feat)
-        conv_feat = tf.reduce_max(all_conv_feat, 0)
+        conv_feat = tf.reduce_max(input_tensor=all_conv_feat, axis=0)
         conv_feat = tf.nn.relu(conv_feat)
         return conv_feat
 
@@ -133,7 +133,7 @@ class MaSIF_ppi_search:
         epsilon = tf.constant(value=0.00001)
         logit = tf.nn.softmax([pos, neg])
         self.softmax_debug = logit
-        cross_entropy = -(tf.log(logit[1] + epsilon) - tf.log(logit[0] + epsilon))
+        cross_entropy = -(tf.math.log(logit[1] + epsilon) - tf.math.log(logit[0] + epsilon))
         return cross_entropy
 
     # Data loss
@@ -151,23 +151,23 @@ class MaSIF_ppi_search:
         )
 
         pos_distances = tf.reduce_sum(
-            tf.square(self.global_desc_binder - self.global_desc_pos), 1
+            input_tensor=tf.square(self.global_desc_binder - self.global_desc_pos), axis=1
         )
         neg_distances = tf.reduce_sum(
-            tf.square(self.global_desc_neg - self.global_desc_neg_2), 1
+            input_tensor=tf.square(self.global_desc_neg - self.global_desc_neg_2), axis=1
         )
         self.score = tf.concat([pos_distances, neg_distances], axis=0)
         pos_distances = tf.nn.relu(
-            tf.reduce_sum(tf.square(self.global_desc_binder - self.global_desc_pos), 1)
+            tf.reduce_sum(input_tensor=tf.square(self.global_desc_binder - self.global_desc_pos), axis=1)
             - pos_thresh
         )
         neg_distances = tf.nn.relu(
-            -tf.reduce_sum(tf.square(self.global_desc_neg - self.global_desc_neg_2), 1)
+            -tf.reduce_sum(input_tensor=tf.square(self.global_desc_neg - self.global_desc_neg_2), axis=1)
             + neg_thresh
         )
 
-        pos_mean, pos_std = tf.nn.moments(pos_distances, [0])
-        neg_mean, neg_std = tf.nn.moments(neg_distances, [0])
+        pos_mean, pos_std = tf.nn.moments(x=pos_distances, axes=[0])
+        neg_mean, neg_std = tf.nn.moments(x=neg_distances, axes=[0])
         data_loss = pos_std + neg_std + pos_mean + neg_mean
 
         return data_loss
@@ -202,7 +202,7 @@ class MaSIF_ppi_search:
                 tf.random.set_seed(0)
             except AttributeError:
                 #Backwards compatability
-                tf.set_random_seed(0)
+                tf.compat.v1.set_random_seed(0)
 
             with tf.device(idx_gpu):
 
@@ -237,18 +237,18 @@ class MaSIF_ppi_search:
                         )
                     )  # 1, n_gauss
 
-                self.keep_prob = tf.placeholder(tf.float32)
+                self.keep_prob = tf.compat.v1.placeholder(tf.float32)
                 # **Features for binder should be flipped before feeding to the NN.
-                self.rho_coords = tf.placeholder(
+                self.rho_coords = tf.compat.v1.placeholder(
                     tf.float32, shape=[None, None, 1]
                 )  # batch_size, n_vertices, 1
-                self.theta_coords = tf.placeholder(
+                self.theta_coords = tf.compat.v1.placeholder(
                     tf.float32, shape=[None, None, 1]
                 )  # batch_size, n_vertices, 1
-                self.input_feat = tf.placeholder(
+                self.input_feat = tf.compat.v1.placeholder(
                     tf.float32, shape=[None, None, self.n_feat]
                 )  # batch_size, n_vertices, n_feat
-                self.mask = tf.placeholder(
+                self.mask = tf.compat.v1.placeholder(
                     tf.float32, shape=[None, None, 1]
                 )  # batch_size, n_vertices, 1
 
@@ -267,13 +267,13 @@ class MaSIF_ppi_search:
                 for i in range(self.n_feat):
                     my_input_feat = tf.expand_dims(self.input_feat[:, :, i], 2)
 
-                    W_conv = tf.get_variable(
+                    W_conv = tf.compat.v1.get_variable(
                         "W_conv_{}".format(i),
                         shape=[
                             self.n_thetas * self.n_rhos,
                             self.n_thetas * self.n_rhos,
                         ],
-                        initializer=tf.contrib.layers.xavier_initializer(),
+                        initializer=tf.compat.v1.keras.initializers.VarianceScaling(scale=1.0, mode="fan_avg", distribution="uniform"),
                     )
 
                     desc = self.inference(
@@ -298,37 +298,45 @@ class MaSIF_ppi_search:
                 )
 
                 # Refine global_desc with a FC layer.
-                self.global_desc = tf.contrib.layers.fully_connected(
+                # self.global_desc = tf.contrib.layers.fully_connected(
+                #     self.global_desc,
+                #     self.n_thetas * self.n_rhos,
+                #     activation_fn=tf.identity,
+                # )  # batch_size, n_thetas
+
+                self.global_desc = tf.compat.v1.layers.dense(
                     self.global_desc,
                     self.n_thetas * self.n_rhos,
-                    activation_fn=tf.identity,
-                )  # batch_size, n_thetas
+                    use_bias=True,
+                    kernel_initializer=tf.compat.v1.initializers.glorot_uniform()
+                )
+                self.global_desc = tf.identity(self.global_desc)
 
                 # compute data loss
-                self.n_patches = tf.shape(self.global_desc)[0] // 4
+                self.n_patches = tf.shape(input=self.global_desc)[0] // 4
                 self.data_loss = self.compute_data_loss()
 
                 # definition of the solver
-                self.optimizer = tf.train.AdamOptimizer(
+                self.optimizer = tf.compat.v1.train.AdamOptimizer(
                     learning_rate=learning_rate
                 ).minimize(self.data_loss)
 
-                self.var_grad = tf.gradients(self.data_loss, tf.trainable_variables())
+                self.var_grad = tf.gradients(ys=self.data_loss, xs=tf.compat.v1.trainable_variables())
                 # print self.var_grad
                 for k in range(len(self.var_grad)):
                     if self.var_grad[k] is None:
-                        print(tf.trainable_variables()[k])
+                        print(tf.compat.v1.trainable_variables()[k])
                 self.norm_grad = self.frobenius_norm(
                     tf.concat([tf.reshape(g, [-1]) for g in self.var_grad], 0)
                 )
 
                 # Create a session for running Ops on the Graph.
-                config = tf.ConfigProto(allow_soft_placement=True)
+                config = tf.compat.v1.ConfigProto(allow_soft_placement=True)
                 config.gpu_options.allow_growth = True
-                self.session = tf.Session(config=config)
-                self.saver = tf.train.Saver()
+                self.session = tf.compat.v1.Session(config=config)
+                self.saver = tf.compat.v1.train.Saver()
 
                 # Run the Op to initialize the variables.
-                init = tf.global_variables_initializer()
+                init = tf.compat.v1.global_variables_initializer()
                 self.session.run(init)
                 self.count_number_parameters()

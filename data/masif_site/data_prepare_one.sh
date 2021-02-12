@@ -15,15 +15,15 @@ else
 	PDB_ID=$(echo $PPI_PAIR_ID| cut -d"_" -f1)
 	CHAIN1=$(echo $PPI_PAIR_ID| cut -d"_" -f2)
 	CHAIN2=$(echo $PPI_PAIR_ID| cut -d"_" -f3)
-	python -W ignore -m masif.data_preparation.00-pdb_download $PPI_PAIR_ID
+	python -W ignore -m masif.data_preparation.pdb_download $PPI_PAIR_ID
 fi
 
 if [ -z $CHAIN2 ]
 then
     echo "Empty"
-    python -W ignore -m masif.data_preparation.01-pdb_extract_and_triangulate $PDB_ID\_$CHAIN1
+    python -W ignore -m masif.data_preparation.pdb_extract_and_triangulate $PDB_ID\_$CHAIN1
 else
-    python -W ignore -m masif.data_preparation/01-pdb_extract_and_triangulate $PDB_ID\_$CHAIN1
-    python -W ignore -m masif.data_preparation/01-pdb_extract_and_triangulate $PDB_ID\_$CHAIN2
+    python -W ignore -m masif.data_preparation/pdb_extract_and_triangulate $PDB_ID\_$CHAIN1
+    python -W ignore -m masif.data_preparation/pdb_extract_and_triangulate $PDB_ID\_$CHAIN2
 fi
-python -m masif.data_preparation.04-masif_precompute masif_site $PPI_PAIR_ID
+python -m masif.data_preparation.masif_precompute masif_site $PPI_PAIR_ID

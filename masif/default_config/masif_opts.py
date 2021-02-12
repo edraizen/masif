@@ -29,7 +29,7 @@ def make_paths(d, this_dir=None):
                 #Set tempdir
                 v = v.format(tmp_dir=tempfile.gettempdir())
             elif this_dir is not None and v.startswith("{this_dir}"):
-                v = v.format(masif_source=os.path.dirname(os.path.dirname(__file__)))
+                v = v.format(this_dir=this_dir)
             if not os.path.isdir(v):
                 os.makedirs(v, exist_ok=True)
             d[k]=v
@@ -57,18 +57,24 @@ def update_config(old, new=None):
     elif isinstance(new, str) and os.path.isfile(new):
         new = read_config_file(f)
     else:
-        if "masif" in new and "." in new:
+        if "masif" in new and "." in new and "/" not in new:
             try:
+                print(f"try reading module {type(new)} {new}")
                 newobj = importlib.import_module(new, package=None)
                 new_config_dir = os.path.dirname(newobj.__file__)
                 new_config_file = os.path.join(new_config_dir, "custom_params.json")
                 if os.path.isfile(new_config_file):
                     new = read_config_file(new_config_file)
-                    new = make_paths(new_config_dir)
+                    new = make_paths(new, this_dir=new_config_dir)
                 else:
+                    print(f"failed reading module: {new_config_file} not found")
+                    assert 0
                     new = {}
                 del newobj
-            except ImportError:
+            except (ImportError, ModuleNotFoundError):
+                raise
+                import traceback as tb
+                print("failed reading module {}")
                 new = {}
         else:
             new = {}

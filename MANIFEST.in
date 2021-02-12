@@ -1,2 +1,12 @@
-include masif/*/*.json
 include masif/*/README.md
+include masif/*/*.json
+include masif/nn_models/*/*.json
+include masif/nn_models/*/*/*.json
+include masif/nn_models/*/*/*/*.json
+include masif/nn_models/*/*/*/*/*.json
+
+include masif/nn_models/*/*/model.*
+include masif/nn_models/*/*/*/model.*
+include masif/nn_models/*/*/*/model.*
+include masif/nn_models/*/*/*/*/model.*
+include masif/nn_models/*/*/*/*/model.*
