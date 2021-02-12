@@ -15,7 +15,7 @@ import scipy.sparse as spio
 import sys
 
 # import the right version of open3d
-from geometry.open3d_import import PointCloud, read_point_cloud, \
+from masif.geometry.open3d_import import PointCloud, read_point_cloud, \
         Vector3dVector, Feature, registration_ransac_based_on_feature_matching, \
        TransformationEstimationPointToPoint, CorrespondenceCheckerBasedOnEdgeLength, \
       CorrespondenceCheckerBasedOnDistance, CorrespondenceCheckerBasedOnNormal, \

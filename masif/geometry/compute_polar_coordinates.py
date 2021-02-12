@@ -7,7 +7,6 @@ Released under an Apache License 2.0
 
 import sys
 from sklearn.manifold import MDS
-import networkx as nx
 import numpy as np
 import scipy.linalg
 from IPython.core.debugger import set_trace

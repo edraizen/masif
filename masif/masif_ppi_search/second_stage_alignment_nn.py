@@ -3,13 +3,13 @@
 import sys
 import time
 import sklearn.metrics
-from geometry.open3d_import import *
+from masif.geometry.open3d_import import *
 import numpy as np
 import os
 from masif.masif_ppi_search.alignment_utils_masif_search import compute_nn_score, rand_rotation_matrix, \
         get_center_and_random_rotate, get_patch_geo, multidock, test_alignments, \
        subsample_patch_coords
-from transformation_training_data.score_nn import ScoreNN
+from masif.masif_ppi_search.transformation_training_data.score_nn import ScoreNN
 from scipy.spatial import cKDTree
 from Bio.PDB import *
 import copy
