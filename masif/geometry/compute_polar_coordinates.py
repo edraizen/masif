@@ -13,6 +13,7 @@ from IPython.core.debugger import set_trace
 from  numpy.linalg import norm
 import time
 from scipy.sparse import csr_matrix, coo_matrix
+import networkx as nx
 
 
 def compute_polar_coordinates(mesh, do_fast=True, radius=12, max_vertices=200):
