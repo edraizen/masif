@@ -53,13 +53,13 @@ def main(args=None):
 
     if args.masif_app == "ligand":
         for pdb_chain in args.pdb_pair_id:
-            prepare(pdb_chain, masif_app="ligand")
+            prepare(pdb_chain, masif_app="masif_ligand")
     elif args.masif_app == "site":
         for pdb_chain in args.pdb_pair_id:
-            prepare(pdb_chain, masif_app="site")
+            prepare(pdb_chain, masif_app="masif_site")
     elif args.masif_app == "ppi_search":
         for pdb_chain in args.pdb_pair_id:
-            prepare(pdb_chain, masif_app="ligand", nn_model=args.nn_model)
+            prepare(pdb_chain, masif_app="masif_ppi_search", nn_model=args.nn_model)
 
     if args.prep:
         return
