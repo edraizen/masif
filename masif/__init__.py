@@ -45,7 +45,7 @@ def prepare(pdb_chain, masif_app=None, nn_model=None):
         if masif_app=="masif_ppi_search":
             if nn_model is None:
                 nn_model = "masif.nn_models.masif_ppi_search.sc05.all_feat"
-            masif_precompute("masif_ppi_search", pdb_chain)
+            masif_precompute("masif_ppi_search", [pdb_chain])
             masif_ppi_search_comp_desc(pdb_chain, nn_model=nn_model)
 
 def main(args=None):
