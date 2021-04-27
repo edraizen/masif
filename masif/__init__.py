@@ -1,6 +1,16 @@
 import sys
 import argparse
 
+def str2bool(v):
+    if isinstance(v, bool):
+       return v
+    if v.lower() in ('yes', 'true', 't', 'y'):
+        return True
+    elif v.lower() in ('no', 'false', 'f', 'n'):
+        return False
+    else:
+        return v
+
 def parse_args(args=None):
     main_parser = argparse.ArgumentParser()
 
@@ -10,29 +20,38 @@ def parse_args(args=None):
     ligand_parser = subparsers.add_parser("ligand", help="Run masif_ligand",
         description="Run masif_ligand")
     ligand_parser.add_argument("--prep", action="store_true", help="Only preapre files do no training or inference")
+    ligand_parser.add_argument("--bio", type=str2bool, nargs='?', const=True, default=False, help="Use biological assembly when downloading from PDB")
+    ligand_parser.add_argument("--file", default=None, help="Use file instead of downloading from PDB")
     ligand_parser.add_argument('pdb_pair_id', nargs="+", help='PDBID_CHAIN1[CHAIN2]')
 
     site_parser = subparsers.add_parser("site", help="Run masif_site",
         description="Run masif_site")
     site_parser.add_argument("--prep", action="store_true", help="Only preapre files do no training or inference")
+    site_parser.add_argument("--bio", type=str2bool, nargs='?', const=True, default=False, help="Use biological assembly when downloading from PDB")
+    site_parser.add_argument("--file", default=None, help="Use file instead of downloading from PDB")
     site_parser.add_argument('pdb_pair_id', nargs="+", help='PDBID_CHAIN1[CHAIN2]')
 
     ppi_parser = subparsers.add_parser("ppi_search", help="Run masif_ppi_search",
         description="Run masif_ppi_search")
     ppi_parser.add_argument("--prep", action="store_true", help="Only preapre files do no training or inference")
+    ppi_parser.add_argument("--bio", type=str2bool, nargs='?', const=True, default=False, help="Use biological assembly when downloading from PDB")
+    ppi_parser.add_argument("--file", default=None, help="Use file instead of downloading from PDB")
     ppi_parser.add_argument("--nn_model", help="Path to json config files for model or module name",
                             default="masif.nn_models.masif_ppi_search.sc05.all_feat")
     ppi_parser.add_argument('pdb_pair_id', nargs="+", help='PDBID_CHAIN1[CHAIN2]')
 
     return main_parser.parse_args(args)
 
-def prepare(pdb_chain, masif_app=None, nn_model=None):
+def prepare(pdb_chain, masif_app=None, bio=False, file=None, nn_model=None):
     from masif.data_preparation.pdb_download import pdb_download
     from masif.data_preparation.pdb_extract_and_triangulate import pdb_extract_and_triangulate
     from masif.data_preparation.masif_precompute import masif_precompute
     from masif.masif_ppi_search.masif_ppi_search_comp_desc import masif_ppi_search_comp_desc
 
-    pdb_download(pdb_chain)
+    if bio and file is None:
+        pdb_chain = f"bio{pdb_chain}"
+
+    pdb_chain, _ = pdb_download(pdb_chain, bio=bio, file=file)
 
     pdb_id, chains = pdb_chain.split("_", 1)
     for chain in chains.split("_"):
