@@ -30,6 +30,8 @@ def pdb_download(pdb, protonate=True, bio=None, file=None):
         bio = 1
 
     if file is not None and os.path.isfile(file):
+        #pdb_filename = os.path.join(masif_opts['tmp_dir'], f"{pdb_id.lower()}-bio{bio}.pdb")
+        #shutil.move(os.path.join(masif_opts['tmp_dir'], f"{pdb_id.lower()}.pdb{bio}"), pdb_filename)
         pdb_filename = file
     elif os.path.isfile(pdb):
         #Used path to pdb
@@ -46,7 +48,7 @@ def pdb_download(pdb, protonate=True, bio=None, file=None):
         with zipfile.ZipFile(zip_path, "r") as f:
             f.extractall(masif_opts['tmp_dir'])
         pdb_filename = os.path.join(masif_opts['tmp_dir'], f"{pdb_id.lower()}-bio{bio}.pdb")
-        shutil.move(os.path.join(masif_opts['tmp_dir'], f"{pdb_id.lower()}.pdb{bio}", pdb_filename)
+        shutil.move(os.path.join(masif_opts['tmp_dir'], f"{pdb_id.lower()}.pdb{bio}"), pdb_filename)
         pdb_id += f"-bio{bio}"
 
     assert os.path.isfile(pdb_filename), f"{pdb_filename} not found"
