@@ -47,12 +47,9 @@ def prepare(pdb_chain, masif_app=None, bio=False, file=None, nn_model=None):
     from masif.data_preparation.pdb_extract_and_triangulate import pdb_extract_and_triangulate
     from masif.data_preparation.masif_precompute import masif_precompute
     from masif.masif_ppi_search.masif_ppi_search_comp_desc import masif_ppi_search_comp_desc
-
-    if bio and file is None:
-        pdb_chain = f"bio{pdb_chain}"
-
+    print(pdb_chain, bio, file)
     pdb_chain, _ = pdb_download(pdb_chain, bio=bio, file=file)
-
+    print(pdb_chain, bio, file)
     pdb_id, chains = pdb_chain.split("_", 1)
     for chain in chains.split("_"):
         pdb_extract_and_triangulate(f"{pdb_id}_{chain}")

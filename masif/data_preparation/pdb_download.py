@@ -20,11 +20,13 @@ def pdb_download(pdb, protonate=True, bio=None, file=None):
 
     in_fields = pdb.split('_')
     pdb_id = in_fields[0]
+    pdb_chains = in_fields[1]
 
     if "-bio" in pdb_id:
         bio_fields = pdb_id.split("-bio")
         pdb_id = bio_fields[0]
-        bio = bio_fields[1]
+        if bio is None:
+            bio = bio_fields[1]
 
     if isinstance(bio, bool) and bio:
         bio = 1
@@ -33,6 +35,8 @@ def pdb_download(pdb, protonate=True, bio=None, file=None):
         #pdb_filename = os.path.join(masif_opts['tmp_dir'], f"{pdb_id.lower()}-bio{bio}.pdb")
         #shutil.move(os.path.join(masif_opts['tmp_dir'], f"{pdb_id.lower()}.pdb{bio}"), pdb_filename)
         pdb_filename = file
+        if bio is not None:
+            pdb_id += f"-bio{bio}"
     elif os.path.isfile(pdb):
         #Used path to pdb
         raise RuntimeError("Must use file argument and use the pdb argument for the name to save files")
@@ -41,14 +45,13 @@ def pdb_download(pdb, protonate=True, bio=None, file=None):
         pdbl = PDBList()
         pdb_filename = pdbl.retrieve_pdb_file(pdb_id, pdir=masif_opts['tmp_dir'], file_format='pdb')
     elif len(pdb_id) == 4 and bio is not None:
-        import urllib.request as urllib
-        import zipfile
+        import urllib.request
+        import gzip
         url = f"https://files.rcsb.org/download/{pdb_id.upper()}.pdb{bio}.gz"
         zip_path, _ = urllib.request.urlretrieve(url)
-        with zipfile.ZipFile(zip_path, "r") as f:
-            f.extractall(masif_opts['tmp_dir'])
         pdb_filename = os.path.join(masif_opts['tmp_dir'], f"{pdb_id.lower()}-bio{bio}.pdb")
-        shutil.move(os.path.join(masif_opts['tmp_dir'], f"{pdb_id.lower()}.pdb{bio}"), pdb_filename)
+        with gzip.open(zip_path, "rb") as f_in, open(pdb_filename, 'wb') as f_out:
+            shutil.copyfileobj(f_in, f_out)
         pdb_id += f"-bio{bio}"
 
     assert os.path.isfile(pdb_filename), f"{pdb_filename} not found"
@@ -69,7 +72,7 @@ def pdb_download(pdb, protonate=True, bio=None, file=None):
 
         pdb_filename = protonated_file
 
-    return pdb_id, pdb_filename
+    return f"{pdb_id}_{pdb_chains}", pdb_filename
 
 if __name__ == "__main__":
     if len(sys.argv) <= 1:
